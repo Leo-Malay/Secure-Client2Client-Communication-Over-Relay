@@ -8,9 +8,11 @@ import java.io.Serializable;
 public class Message implements Serializable {
     public String senderId;
     public String receiverId;
+    public int seqId;
 
     public Message(String senderId) {
         this.senderId = senderId;
+        this.seqId = 0;
     }
 
     /* Convert object to byte array */
