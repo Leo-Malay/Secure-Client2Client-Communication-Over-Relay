@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,9 +8,33 @@ public class Relay {
     static Node node;
     static ServerSocket server;
     static Map<String, DataOutputStream> clientMap;
+    static Map<String, PublicKey> clientPublicKey;
 
-    public static void handleIncomingMessage(Message msg) {
+    /* Handle client registration */
+    public static void handleRegistration(Message msg, DataOutputStream dataOutStream) {
+        // Add the associated public key of client to the client map
+        if (clientMap.containsKey(msg.senderId)) {
+            System.out.println("[INFO] Client ID already present. Updating the public key");
+        } else {
+            // Adding node public key to map.
+            clientPublicMap.put(msg.senderId, msg.publicKey);
+            // Adding connection to map.
+            clientMap.put(msg.senderId, dataOutStream);
+        }
+        // Send an Acknowledgement
+        Message msg_ack = new Message("Relay", msg.nonce - 1);
+        sendMessage(msg.senderId, msg_ack);
+    }
 
+    public static void handleIncomingMessage(Message msg, DataOutputStream dataOutStream) {
+        switch (msg.messageType) {
+            case MessageType.REGISTRATION:
+                handleRegistration(msg, dataOutStream);
+                break;
+
+            default:
+                break;
+        }
     }
 
     public static void sendMessage(String receiverId, Message msg) throws Exception {
@@ -19,12 +44,12 @@ public class Relay {
         }
 
         DataOutputStream dataOutStream = clientMap.get(receiverId);
-        // preparing the message
-        byte[] messageBuffer = msg.toByteArray();
-        int messageLength = messageBuffer.length;
+        // Encrypt each message before sending
+        byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
+        int messageLength = encryptedMessage.length;
 
         dataOutStream.writeInt(messageLength);
-        dataOutStream.write(messageBuffer);
+        dataOutStream.write(encryptedMessage);
         dataOutStream.flush();
         System.out.println("[INFO] Message sent from <" + msg.senderId + "> --> <" + msg.receiverId + ">");
     }
@@ -34,6 +59,7 @@ public class Relay {
             // Initialize node and client mapp
             node = new Node("Relay");
             clientMap = new HashMap<String, DataOutputStream>();
+            clientPublicKey = new HashMap<String, PublicKey>();
             // Load Keys
             node.checkAndLoadKeys();
 
