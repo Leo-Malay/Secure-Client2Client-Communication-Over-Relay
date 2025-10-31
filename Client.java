@@ -15,22 +15,8 @@ public class Client {
             DataInputStream dataInputStream = new DataInputStream(clientInputStream);
             DataOutputStream dataOutputStream = new DataOutputStream(clientOutputStream);
 
-            System.out.println("Sending the message");
-            // Making a sample message
-            Message msg = new Message("ClientA");
-            dataOutputStream.writeInt(msg.toByteArray().length);
-            dataOutputStream.write(msg.toByteArray());
-            dataOutputStream.flush();
-            System.out.println("Message sent");
             while (true) {
-                // Reading Incoming Message.
-                int length = dataInputStream.readInt();
-                byte[] buffer = new byte[length];
-                dataInputStream.readFully(buffer);
-                Message msg1 = Message.fromByteArray(buffer);
-
-                System.out.println("SenderId:" + msg1.senderId);
-                System.out.println("SeqId:" + msg1.seqId);
+                // Handle other stasks.
             }
         } catch (Exception e) {
             System.out.println("[ERROR]: Something went wrong." + e);
@@ -41,16 +27,8 @@ public class Client {
     public void InitRegistration() {
     }
 
-    /* Handle Registration */
-    public void HandleRegistration() {
-    }
-
     /* Init Session Key */
     public void InitSessionKey() {
-    }
-
-    /* Handle Session Key */
-    public void HandleSessionKey() {
     }
 
     /* Handle Session Key Ack */

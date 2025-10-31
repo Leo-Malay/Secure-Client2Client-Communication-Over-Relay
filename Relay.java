@@ -22,7 +22,7 @@ public class Relay {
             clientMap.put(msg.senderId, dataOutStream);
         }
         // Send an Acknowledgement
-        Message msg_ack = new Message(node.nodeId, msg.senderId, msg.nonce - 1, node.rsaPublicKey);
+        Message msg_ack = new Message(node.nodeId, msg.senderId, msg.nonce - 1);
         sendMessage(msg.senderId, msg_ack);
     }
 
@@ -31,7 +31,6 @@ public class Relay {
             case MessageType.REGISTRATION:
                 handleRegistration(msg, dataOutStream);
                 break;
-
             default:
                 break;
         }
