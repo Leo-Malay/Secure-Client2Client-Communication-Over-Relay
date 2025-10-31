@@ -9,7 +9,6 @@ public class Relay {
     static Map<String, DataOutputStream> clientMap;
 
     public static void handleIncomingMessage(Message msg) {
-        // Decrpyt the message.
 
     }
 
