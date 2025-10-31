@@ -1,13 +1,22 @@
 import java.io.*;
+import java.security.PublicKey;
 
 public class Message implements Serializable {
     public String senderId;
     public String receiverId;
-    public int seqId;
+    public int nonce;
+    public MessageType messageType;
+    public PublicKey publicKey;
+    // public int seqId;
 
-    public Message(String senderId) {
+
+    public Message(String senderId, String receiverId, Integer nonce, MessageType messageType, PublicKey publicKey) {
         this.senderId = senderId;
-        this.seqId = 0;
+        this.receiverId = receiverId;
+        this.nonce = nonce;
+        this.messageType = messageType;
+        this.publicKey = publicKey;
+        // this.seqId = 0;
     }
 
     /* Convert object to byte array */
