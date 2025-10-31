@@ -7,16 +7,14 @@ public class Message implements Serializable {
     public int nonce;
     public MessageType messageType;
     public PublicKey publicKey;
-    // public int seqId;
 
 
-    public Message(String senderId, String receiverId, Integer nonce, MessageType messageType, PublicKey publicKey) {
+    public Message(String senderId, String receiverId, Integer nonce, PublicKey publicKey) {
+        this.messageType = MessageType.REGISTRATION;
         this.senderId = senderId;
         this.receiverId = receiverId;
         this.nonce = nonce;
-        this.messageType = messageType;
         this.publicKey = publicKey;
-        // this.seqId = 0;
     }
 
     /* Convert object to byte array */
