@@ -8,13 +8,21 @@ public class Message implements Serializable {
     public MessageType messageType;
     public PublicKey publicKey;
 
-
+    /* Constructor for registration messages */
     public Message(String senderId, String receiverId, Integer nonce, PublicKey publicKey) {
         this.messageType = MessageType.REGISTRATION;
         this.senderId = senderId;
         this.receiverId = receiverId;
         this.nonce = nonce;
         this.publicKey = publicKey;
+    }
+
+    /* Constructor for registration acknowledgment messages */
+    public Message(String senderId, String receiverId, Integer nonce) {
+        this.messageType = MessageType.REGISTRATION_ACK;
+        this.senderId = senderId;
+        this.receiverId = receiverId;
+        this.nonce = nonce;
     }
 
     /* Convert object to byte array */
