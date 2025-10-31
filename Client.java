@@ -95,7 +95,13 @@ public class Client {
 
     public static void main(String[] args) {
         try {
-            node = new Node("ClientA");
+
+            if (args.length != 2) {
+                System.out.println("Usage: java Client <Node_Name>");
+                return;
+            }
+
+            node = new Node(args[1]);
             // Upload
             relayPublicKey = node.loadPublicKey("Relay");
             connectToRelay(5050);
