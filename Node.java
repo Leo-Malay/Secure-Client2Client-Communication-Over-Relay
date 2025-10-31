@@ -60,10 +60,10 @@ public class Node {
             // Since key is not present, generating it.
             generateRSAKeys();
         } else {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
             // Load PRIVATE key (PKCS#8)
             byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile);
             PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
             this.rsaPrivateKey = kf.generatePrivate(privateKeySpec);
 
             // Load PUBLIC key (X.509)
@@ -78,15 +78,15 @@ public class Node {
     /* Load the public key of the neighbouring node */
     public PublicKey loadPublicKey(String nodeId)
             throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
-        Path privateKeyFile = Path.of(this.keyDirectory, "private_" + nodeId);
+        Path publicKeyFile = Path.of(this.keyDirectory, "public_" + nodeId);
         // Chacking if the file exists
-        boolean privateKeyExists = Files.exists(privateKeyFile);
-        if (!privateKeyExists) {
+        boolean publicKeyExists = Files.exists(publicKeyFile);
+        if (!publicKeyExists) {
             System.out.println("[ERROR]: Key files not found");
             return null;
         } else {
-            byte[] privateKeyBytes = Files.readAllBytes(privateKeyFile);
-            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+            byte[] publicKeyBytes = Files.readAllBytes(publicKeyFile);
+            X509EncodedKeySpec privateKeySpec = new X509EncodedKeySpec(publicKeyBytes);
             KeyFactory kf = KeyFactory.getInstance("RSA");
             System.out.println("[INFO] Loaded Public key of " + nodeId);
             return kf.generatePublic(privateKeySpec);

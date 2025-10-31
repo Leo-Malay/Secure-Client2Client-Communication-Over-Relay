@@ -44,7 +44,8 @@ public class Relay {
 
         DataOutputStream dataOutStream = clientMap.get(receiverId);
         // Encrypt each message before sending
-        byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
+        // byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
+        byte[] encryptedMessage = msg.toByteArray();
         int messageLength = encryptedMessage.length;
 
         dataOutStream.writeInt(messageLength);
@@ -71,7 +72,6 @@ public class Relay {
                 Socket client = server.accept();
                 // Start thread to handle the client connection
                 Thread listener = new Thread(() -> {
-                    System.out.println("Accepted a connection");
                     try {
                         InputStream clientInputStream = client.getInputStream();
                         OutputStream clientOutputStream = client.getOutputStream();
@@ -85,6 +85,9 @@ public class Relay {
                                 dataInputStream.readFully(buffer);
                                 Message msg = Message.fromByteArray(buffer);
                                 // Handle incoming message
+                                System.out.println(
+                                        "[INFO] Message received from <" + msg.senderId + "> --> <" + msg.receiverId
+                                                + ">");
                                 handleIncomingMessage(msg, dataOutputStream);
 
                             } catch (EOFException e) {
