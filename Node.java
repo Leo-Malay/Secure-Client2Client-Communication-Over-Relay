@@ -93,6 +93,11 @@ public class Node {
         }
     }
 
+    /* Generate Random Number */
+    public int generateRandomNumber() {
+        return (int) (Math.random() * 10000);
+    }
+
     /* Encrypt Message */
     public byte[] encryptRSA(String receiverId, Message msg) throws Exception {
         PublicKey receiverPublicKey = null;

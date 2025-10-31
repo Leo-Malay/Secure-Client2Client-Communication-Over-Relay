@@ -5,6 +5,7 @@ public class Client {
     static Node node;
     static Socket relaySocket;
 
+
     /* Connect to Relay */
     public static void connectToRelay(int port) {
         try {
@@ -25,6 +26,14 @@ public class Client {
 
     /* Init Registration */
     public void InitRegistration() {
+        int nonce = node.generateRandomNumber();
+        Message message = new Message(node.nodeId, "Relay", nonce, node.rsaPublicKey);
+        sendMessage(relaySocket, message);
+        // Wait for response    
+    }
+
+    /* Send Message */
+    public static void sendMessage(String receiverId, Message msg) throws Exception {
     }
 
     /* Init Session Key */
