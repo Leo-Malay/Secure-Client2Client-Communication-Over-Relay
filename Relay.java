@@ -8,7 +8,7 @@ public class Relay {
     static Node node;
     static ServerSocket server;
     static Map<String, DataOutputStream> clientMap;
-    static Map<String, PublicKey> clientPublicKey;
+    static Map<String, PublicKey> clientPublicMap;
 
     /* Handle client registration */
     public static void handleRegistration(Message msg, DataOutputStream dataOutStream) {
@@ -59,7 +59,7 @@ public class Relay {
             // Initialize node and client mapp
             node = new Node("Relay");
             clientMap = new HashMap<String, DataOutputStream>();
-            clientPublicKey = new HashMap<String, PublicKey>();
+            clientPublicMap = new HashMap<String, PublicKey>();
             // Load Keys
             node.checkAndLoadKeys();
 
@@ -86,7 +86,7 @@ public class Relay {
                                 dataInputStream.readFully(buffer);
                                 Message msg = Message.fromByteArray(buffer);
                                 // Handle incoming message
-                                handleIncomingMessage(msg);
+                                handleIncomingMessage(msg, dataOutputStream);
 
                             } catch (EOFException e) {
                                 System.out.println("[SERVER] Connection closed by client");
