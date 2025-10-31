@@ -96,12 +96,12 @@ public class Client {
     public static void main(String[] args) {
         try {
 
-            if (args.length != 2) {
+            if (args.length != 1) {
                 System.out.println("Usage: java Client <Node_Name>");
                 return;
             }
 
-            node = new Node(args[1]);
+            node = new Node(args[0]);
             // Upload
             relayPublicKey = node.loadPublicKey("Relay");
             connectToRelay(5050);
