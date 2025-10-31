@@ -11,7 +11,7 @@ public class Relay {
     static Map<String, PublicKey> clientPublicMap;
 
     /* Handle client registration */
-    public static void handleRegistration(Message msg, DataOutputStream dataOutStream) {
+    public static void handleRegistration(Message msg, DataOutputStream dataOutStream) throws Exception {
         // Add the associated public key of client to the client map
         if (clientMap.containsKey(msg.senderId)) {
             System.out.println("[INFO] Client ID already present. Updating the public key");
@@ -22,11 +22,11 @@ public class Relay {
             clientMap.put(msg.senderId, dataOutStream);
         }
         // Send an Acknowledgement
-        Message msg_ack = new Message("Relay", msg.nonce - 1);
+        Message msg_ack = new Message(node.nodeId, msg.senderId, msg.nonce - 1, node.rsaPublicKey);
         sendMessage(msg.senderId, msg_ack);
     }
 
-    public static void handleIncomingMessage(Message msg, DataOutputStream dataOutStream) {
+    public static void handleIncomingMessage(Message msg, DataOutputStream dataOutStream) throws Exception {
         switch (msg.messageType) {
             case MessageType.REGISTRATION:
                 handleRegistration(msg, dataOutStream);
