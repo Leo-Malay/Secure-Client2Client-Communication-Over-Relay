@@ -32,13 +32,14 @@ public class Client {
                 byte[] buffer = new byte[length];
                 dataInputStream.readFully(buffer);
                 Message msg = Message.fromByteArray(buffer);
-                System.out.println("[INFO] Message received from <" + msg.senderId + "> --> <" + msg.receiverId + ">");
+                System.out.println("[INFO] Message received from <" + msg.senderId + ">");
                 // Match message to respective handler
                 switch (msg.messageType) {
                     case MessageType.REGISTRATION_ACK:
                         handleRegistrationAck(msg);
                         break;
                     case MessageType.SESSIONKEY_ACK:
+                        handleSessionKeyAck(msg);
                         break;
                     default:
                         break;
@@ -60,12 +61,13 @@ public class Client {
     public static void initRegistration() throws Exception {
         // Preparing the message
         nonce = node.generateRandomNumber();
-        Message message = new Message(node.nodeId, "Relay", nonce, node.rsaPublicKey);
+        Message message = new Message.Builder(node.nodeId, "Relay", MessageType.REGISTRATION).nonce(nonce)
+                .publicKey(node.rsaPublicKey).build();
         // Sending the message to relay
         sendMessage("Relay", message);
     }
 
-    /* Init Registration */
+    /* Handle Registration Ack */
     public static void handleRegistrationAck(Message msg) throws Exception {
         if (nonce - 1 != msg.nonce) {
             System.out.println("[ERROR] Invalid Nonce Number");
@@ -75,11 +77,17 @@ public class Client {
     }
 
     /* Init Session Key */
-    public void initSessionKey() {
+    public static void initSessionKey() throws Exception {
+        // Prepare message
+        Message session_init_msg = new Message.Builder(node.nodeId, "Bob", MessageType.SESSIONKEY_INIT).eph(2).nonce(3)
+                .build();
+        // Send message via relay
+        sendMessage("Relay", session_init_msg);
     }
 
     /* Handle Session Key Ack */
-    public void handleSessionKeyAck() {
+    public static void handleSessionKeyAck(Message msg) {
+        System.out.println("[INFO] Received Session INIT from " + msg.senderId);
     }
 
     /* Send Message */
@@ -92,19 +100,17 @@ public class Client {
         dataOutputStream.writeInt(messageLength);
         dataOutputStream.write(encryptedMessage);
         dataOutputStream.flush();
-        System.out.println("[INFO] Message sent from <" + msg.senderId + "> --> <" + msg.receiverId + ">");
+        System.out.println("[INFO] Message sent to <" + msg.receiverId + ">");
     }
 
     public static void main(String[] args) {
         try {
-
             if (args.length != 1) {
                 System.out.println("Usage: java Client <Node_Name>");
                 return;
             }
-
             node = new Node(args[0]);
-            // Upload
+            // Load public key of relay
             relayPublicKey = node.loadPublicKey("Relay");
             connectToRelay(5050);
             // Start listening
@@ -114,13 +120,11 @@ public class Client {
             listener.start();
             // Init Registration Process
             initRegistration();
-            // Test Input.. Alice send message to bob
-            if (node.nodeId.equals("Alice")) {
-                System.out.println("Sending the test message");
-                Message test_msg = new Message(node.nodeId, "Bob", 2, 3);
-                sendMessage(test_msg.receiverId, test_msg);
-            }
 
+            // Test Alice send Bob a message
+            if (node.nodeId.equals("Alice")) {
+                initSessionKey();
+            }
         } catch (Exception e) {
             System.out.println("[ERROR]: Something went wrong");
             e.printStackTrace();

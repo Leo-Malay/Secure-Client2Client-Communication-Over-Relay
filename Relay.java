@@ -24,6 +24,7 @@ public class Relay {
 
     /* Handle client registration */
     public static void handleRegistration(Message msg, DataOutputStream dataOutStream) throws Exception {
+        System.out.println("[INFO] Received Registration INIT message from <" + msg.senderId + ">");
         // Add the associated public key of client to the client map
         if (clientMap.containsKey(msg.senderId)) {
             System.out.println("[INFO] Client ID already present. Updating the public key");
@@ -34,12 +35,14 @@ public class Relay {
             clientMap.put(msg.senderId, dataOutStream);
         }
         // Send an Acknowledgement
-        Message msg_ack = new Message(node.nodeId, msg.senderId, msg.nonce - 1);
+        Message msg_ack = new Message.Builder(node.nodeId, msg.senderId, MessageType.REGISTRATION_ACK)
+                .nonce(msg.nonce - 1).build();
         sendMessage(msg.senderId, msg_ack);
     }
 
     /* Message is not for relay, forward it to respective receiver */
     public static void relayMessage(Message msg) throws Exception {
+        System.out.println("[INFO] Relaying message from <" + msg.senderId + "> --> <" + msg.receiverId + ">");
         // Determine who the receiver is
         String receiverId = msg.receiverId;
         // Relaying the message
@@ -62,7 +65,7 @@ public class Relay {
         dataOutStream.writeInt(messageLength);
         dataOutStream.write(encryptedMessage);
         dataOutStream.flush();
-        System.out.println("[INFO] Message sent from <" + msg.senderId + "> --> <" + msg.receiverId + ">");
+        System.out.println("[INFO] Message sent to <" + msg.receiverId + ">");
     }
 
     public static void main(String[] args) {
@@ -96,9 +99,6 @@ public class Relay {
                                 dataInputStream.readFully(buffer);
                                 Message msg = Message.fromByteArray(buffer);
                                 // Handle incoming message
-                                System.out.println(
-                                        "[INFO] Message received from <" + msg.senderId + "> --> <" + msg.receiverId
-                                                + ">");
                                 handleIncomingMessage(msg, dataOutputStream);
 
                             } catch (EOFException e) {
