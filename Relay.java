@@ -10,6 +10,18 @@ public class Relay {
     static Map<String, DataOutputStream> clientMap;
     static Map<String, PublicKey> clientPublicMap;
 
+    /* Function to handle any incoming messages to the Relay */
+    public static void handleIncomingMessage(Message msg, DataOutputStream dataOutStream) throws Exception {
+        switch (msg.messageType) {
+            case MessageType.REGISTRATION:
+                handleRegistration(msg, dataOutStream);
+                break;
+            default:
+                relayMessage(msg);
+                break;
+        }
+    }
+
     /* Handle client registration */
     public static void handleRegistration(Message msg, DataOutputStream dataOutStream) throws Exception {
         // Add the associated public key of client to the client map
@@ -26,16 +38,15 @@ public class Relay {
         sendMessage(msg.senderId, msg_ack);
     }
 
-    public static void handleIncomingMessage(Message msg, DataOutputStream dataOutStream) throws Exception {
-        switch (msg.messageType) {
-            case MessageType.REGISTRATION:
-                handleRegistration(msg, dataOutStream);
-                break;
-            default:
-                break;
-        }
+    /* Message is not for relay, forward it to respective receiver */
+    public static void relayMessage(Message msg) throws Exception {
+        // Determine who the receiver is
+        String receiverId = msg.receiverId;
+        // Relaying the message
+        sendMessage(receiverId, msg);
     }
 
+    /* Send the message to receiver */
     public static void sendMessage(String receiverId, Message msg) throws Exception {
         // Check if client is connected to us!
         if (!clientMap.containsKey(receiverId)) {

@@ -1,4 +1,7 @@
 public enum MessageType {
     REGISTRATION,
     REGISTRATION_ACK,
+    SESSIONKEY_INIT,
+    SESSIONKEY_ACK,
+    SESSIONKEY_VERIFY
 }

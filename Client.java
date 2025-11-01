@@ -38,6 +38,8 @@ public class Client {
                     case MessageType.REGISTRATION_ACK:
                         handleRegistrationAck(msg);
                         break;
+                    case MessageType.SESSIONKEY_ACK:
+                        break;
                     default:
                         break;
                 }
@@ -112,6 +114,12 @@ public class Client {
             listener.start();
             // Init Registration Process
             initRegistration();
+            // Test Input.. Alice send message to bob
+            if (node.nodeId.equals("Alice")) {
+                System.out.println("Sending the test message");
+                Message test_msg = new Message(node.nodeId, "Bob", 2, 3);
+                sendMessage(test_msg.receiverId, test_msg);
+            }
 
         } catch (Exception e) {
             System.out.println("[ERROR]: Something went wrong");
