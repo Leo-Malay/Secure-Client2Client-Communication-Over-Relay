@@ -1,4 +1,5 @@
 import java.io.*;
+import java.math.BigInteger;
 import java.security.PublicKey;
 
 public class Message implements Serializable {
@@ -6,8 +7,10 @@ public class Message implements Serializable {
     public String receiverId;
     public MessageType messageType;
 
-    public Integer eph;
+    public BigInteger eph;
     public Integer nonce;
+    public String verify;
+    public String message;
     public PublicKey publicKey;
 
     private Message(Builder builder) {
@@ -16,6 +19,8 @@ public class Message implements Serializable {
         this.messageType = builder.messageType;
         this.eph = builder.eph;
         this.nonce = builder.nonce;
+        this.verify = builder.verify;
+        this.message = builder.message;
         this.publicKey = builder.publicKey;
     }
 
@@ -25,8 +30,10 @@ public class Message implements Serializable {
         private String receiverId;
         private MessageType messageType;
         // Optional fields
-        private Integer eph;
+        private BigInteger eph;
         private Integer nonce;
+        private String verify;
+        private String message;
         private PublicKey publicKey;
 
         /* Message Builder class */
@@ -37,7 +44,7 @@ public class Message implements Serializable {
         }
 
         /* Set optional eph */
-        public Builder eph(Integer eph) {
+        public Builder eph(BigInteger eph) {
             this.eph = eph;
             return this;
         }
@@ -45,6 +52,18 @@ public class Message implements Serializable {
         /* Set optional nonce */
         public Builder nonce(Integer nonce) {
             this.nonce = nonce;
+            return this;
+        }
+
+        /* Set optional verify */
+        public Builder verify(String verify) {
+            this.verify = verify;
+            return this;
+        }
+
+        /* Set optional message */
+        public Builder message(String message) {
+            this.message = message;
             return this;
         }
 

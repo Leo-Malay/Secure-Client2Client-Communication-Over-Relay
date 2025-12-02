@@ -1,9 +1,15 @@
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.*;
 import java.security.*;
 import java.security.spec.*;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
+
 import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class Node {
     public String nodeId;
@@ -11,6 +17,10 @@ public class Node {
     protected PublicKey rsaPublicKey;
     protected HashMap<String, PublicKey> neighbourPublicKey = new HashMap<>();
     public final String keyDirectory = "./keys/";
+    private BigInteger a = null;
+    private BigInteger eph = null;
+    private SecretKeySpec sessionKey = null;
+    private SecureRandom rng = new SecureRandom();
 
     /* Node class constructor */
     public Node(String nodeId) {
@@ -119,5 +129,84 @@ public class Node {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, this.rsaPrivateKey);
         return cipher.doFinal(msg.toByteArray());
+    }
+
+    /* Generate and Fetch EPH */
+    public BigInteger generateEphemeralKeys(BigInteger g, BigInteger p) {
+        int bits = 256;
+
+        // Select valid random number
+        BigInteger candidate;
+        do {
+            candidate = new BigInteger(bits, rng);
+        } while (candidate.signum() <= 0);
+
+        this.a = candidate;
+        this.eph = g.modPow(this.a, p);
+        return this.eph;
+    }
+
+    /* Deriving Session Key */
+    public void deriveSessionKey(byte[] eph, BigInteger p) throws Exception {
+        BigInteger peerEPH = new BigInteger(1, eph);
+
+        if (peerEPH.compareTo(BigInteger.ONE) <= 0 || peerEPH.compareTo(p.subtract(BigInteger.ONE)) >= 0) {
+            throw new IllegalArgumentException("Invalid peer EPH");
+        }
+
+        BigInteger shared = peerEPH.modPow(this.a, p);
+        this.a = null;
+
+        // Derive AES key from shared secret via SHA-256
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+        byte[] raw = shared.toByteArray();
+        byte[] hash = sha256.digest(raw);
+
+        // Use first 16 bytes for AES-128 (or use 32 bytes for AES-256)
+        byte[] keyBytes = Arrays.copyOf(hash, 16);
+        this.sessionKey = new SecretKeySpec(keyBytes, "AES");
+
+        Arrays.fill(hash, (byte) 0);
+        Arrays.fill(raw, (byte) 0);
+    }
+
+    /* Encrypt message using session key */
+    public String sessionEncrypt(String plaintext) throws Exception {
+        if (this.sessionKey == null)
+            throw new IllegalStateException("Session key not established");
+
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        byte[] iv = new byte[12]; // 96-bit IV recommended for GCM
+        rng.nextBytes(iv);
+        GCMParameterSpec spec = new GCMParameterSpec(128, iv); // 128-bit tag
+        cipher.init(Cipher.ENCRYPT_MODE, this.sessionKey, spec);
+        byte[] ct = cipher.doFinal(plaintext.getBytes("UTF-8"));
+
+        byte[] out = new byte[iv.length + ct.length];
+        System.arraycopy(iv, 0, out, 0, iv.length);
+        System.arraycopy(ct, 0, out, iv.length, ct.length);
+
+        return Base64.getEncoder().encodeToString(out);
+    }
+
+    /* Decrypt message using session key */
+    public String sessionDecrypt(String ciphertext) throws Exception {
+        if (this.sessionKey == null)
+            throw new IllegalStateException("Session key not established");
+
+        byte[] all = Base64.getDecoder().decode(ciphertext);
+        if (all.length < 12)
+            throw new IllegalArgumentException("Malformed ciphertext");
+
+        byte[] iv = new byte[12];
+        System.arraycopy(all, 0, iv, 0, 12);
+        byte[] ct = new byte[all.length - 12];
+        System.arraycopy(all, 12, ct, 0, ct.length);
+
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        GCMParameterSpec spec = new GCMParameterSpec(128, iv);
+        cipher.init(Cipher.DECRYPT_MODE, this.sessionKey, spec);
+        byte[] pt = cipher.doFinal(ct);
+        return new String(pt, "UTF-8");
     }
 }
