@@ -13,7 +13,7 @@ public class Relay {
     /* Function to handle any incoming messages to the Relay */
     public static void handleIncomingMessage(Message msg, DataOutputStream dataOutStream) throws Exception {
         switch (msg.messageType) {
-            case MessageType.REGISTRATION:
+            case REGISTRATION:
                 handleRegistration(msg, dataOutStream);
                 break;
             default:

@@ -40,6 +40,11 @@ public class Node {
         saveKeyFile();
     }
 
+    
+    public SecretKeySpec getSessionKey() {
+        return this.sessionKey;
+    }
+
     /* Save Newly generate keys to the file */
     private void saveKeyFile() throws IOException {
         // Create directory if not found

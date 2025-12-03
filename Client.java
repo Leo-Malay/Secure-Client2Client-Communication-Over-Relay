@@ -39,17 +39,20 @@ public class Client {
                 System.out.println("[INFO] Message received from <" + msg.senderId + ">");
                 // Match message to respective handler
                 switch (msg.messageType) {
-                    case MessageType.REGISTRATION_ACK:
+                    case REGISTRATION_ACK:
                         handleRegistrationAck(msg);
                         break;
-                    case MessageType.SESSIONKEY_INIT:
+                    case SESSIONKEY_INIT:
                         handleSessionKeyInit(msg);
                         break;
-                    case MessageType.SESSIONKEY_ACK:
+                    case SESSIONKEY_ACK:
                         handleSessionKeyAck(msg);
                         break;
-                    case MessageType.SESSIONKEY_VERIFY:
+                    case SESSIONKEY_VERIFY:
                         handleSessionKeyVerify(msg);
+                        break;
+                    case CHAT_MESSAGE:
+                        handleChatMessage(msg);
                         break;
                     default:
                         break;
@@ -76,6 +79,8 @@ public class Client {
         // Sending the message to relay
         sendMessage("Relay", message);
     }
+
+    
 
     /* Handle Registration Ack */
     public static void handleRegistrationAck(Message msg) throws Exception {
@@ -163,6 +168,19 @@ public class Client {
         System.out.println("[INFO] Message sent to <" + msg.receiverId + ">");
     }
 
+    public static void handleChatMessage(Message msg) throws Exception {
+        String decrypted = node.sessionDecrypt(msg.message);
+        System.out.println("[" + msg.senderId + "]: " + decrypted);
+   }
+
+    public static void sendChatMessage(String receiverId, String text) throws Exception {
+        String encrypted = node.sessionEncrypt(text);
+        Message chatMsg = new Message.Builder(node.nodeId, receiverId, MessageType.CHAT_MESSAGE)
+                .message(encrypted)
+                .build();
+        sendMessage("Relay", chatMsg);
+    }
+
     public static void main(String[] args) {
         try {
             if (args.length < 1) {
@@ -184,7 +202,25 @@ public class Client {
             if (args.length > 1) {
                 receiverId = args[1];
             }
-
+            
+            Thread inputThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
+                    String input;
+                    while ((input = reader.readLine()) != null) {
+                        if ("quit".equals(input)) {
+                            System.out.println("[INFO] Shutting down...");
+                            System.exit(0);
+                        }
+                        if (receiverId != null && node.getSessionKey() != null) {
+                            sendChatMessage(receiverId, input);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            inputThread.start();
+            
         } catch (Exception e) {
             System.out.println("[ERROR]: Something went wrong");
             e.printStackTrace();
