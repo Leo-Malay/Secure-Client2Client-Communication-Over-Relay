@@ -104,7 +104,7 @@ public class Client {
 
     /* Init Session Key */
     public static void initSessionKey(String receiverId) throws Exception {
-        System.out.println("[INFO] Initiating session key exchange with <" + receiverId + ">");
+        
 
         // Prepare message
         BigInteger eph = node.generateEphemeralKeys(g, p);
@@ -121,7 +121,7 @@ public class Client {
 
     /* Handle Session Key Init */
     public static void handleSessionKeyInit(Message msg) throws Exception {
-        System.out.println("[INFO] Processing SESSIONKEY_INIT from <" + msg.senderId + ">");
+        
         BigInteger eph = node.generateEphemeralKeys(g, p);
 
         // Derive the session key
@@ -141,7 +141,7 @@ public class Client {
 
     /* Handle Session Key Ack */
     public static void handleSessionKeyAck(Message msg) throws Exception {
-        System.out.println("[INFO] Processing SESSIONKEY_ACK from <" + msg.senderId + ">");
+      
 
         if (msg.nonce != nonce - 1) {
             System.out.println("[ERROR] Nonce mismatch - Possible replay attack detected!");
@@ -169,7 +169,7 @@ public class Client {
 
     /* Handle Session Key Verify */
     public static void handleSessionKeyVerify(Message msg) throws Exception {
-        System.out.println("[INFO] Processing SESSIONKEY_VERIFY from <" + msg.senderId + ">");
+       
 
         if (node.sessionDecrypt(msg.verify).equals("99")) {
             receiverId = msg.senderId;
@@ -213,9 +213,7 @@ public class Client {
     }
 
     public static void startChatThread() {
-        System.out.println("[INFO] Starting user input thread...");
-        System.out.println("[INFO] Type messages to send (or 'quit' to exit)");
-        System.out.println("========================================");
+        System.out.println("[INFO] Starting Chat, Type messages to send (or 'quit' to exit)\n");
 
         Thread inputThread = new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
@@ -247,10 +245,6 @@ public class Client {
                 System.out.println("Usage: java Client <Node_Name> <Optional_Receiver_Name>");
                 return;
             }
-
-            System.out.println("========================================");
-            System.out.println("       SECURE CHAT CLIENT");
-            System.out.println("========================================");
 
             System.out.println("[INFO] Initializing node: " + args[0]);
             node = new Node(args[0]);
