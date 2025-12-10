@@ -12,7 +12,6 @@ import java.util.Base64;
 import java.util.HashMap;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class Node {
@@ -212,43 +211,65 @@ public class Node {
         Arrays.fill(raw, (byte) 0);
     }
 
-    /* Encrypt message using session key */
+    /* Encrypt using session key */
     public String sessionEncrypt(String plaintext) throws Exception {
         if (this.sessionKey == null)
             throw new IllegalStateException("Session key not established");
 
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        byte[] iv = new byte[12]; // 96-bit IV recommended for GCM
-        rng.nextBytes(iv);
-        GCMParameterSpec spec = new GCMParameterSpec(128, iv); // 128-bit tag
-        cipher.init(Cipher.ENCRYPT_MODE, this.sessionKey, spec);
-        byte[] ct = cipher.doFinal(plaintext.getBytes("UTF-8"));
+        byte[] plainBytes = plaintext.getBytes("UTF-8");
+        byte[] sessionKeyBytes = this.sessionKey.getEncoded();
 
-        byte[] out = new byte[iv.length + ct.length];
-        System.arraycopy(iv, 0, out, 0, iv.length);
-        System.arraycopy(ct, 0, out, iv.length, ct.length);
+        MessageDigest sha = MessageDigest.getInstance("SHA-256");
+        byte[] current = sha.digest(sessionKeyBytes);
+        byte[] keystream = new byte[plainBytes.length];
+        int pos = 0;
 
-        return Base64.getEncoder().encodeToString(out);
+        // Extending keystream
+        while (pos < plainBytes.length) {
+            int copy = Math.min(current.length, plainBytes.length - pos);
+            System.arraycopy(current, 0, keystream, pos, copy);
+            pos += copy;
+            if (pos < plainBytes.length) {
+                current = sha.digest(current);
+            }
+        }
+
+        // XOR
+        byte[] cipherBytes = new byte[plainBytes.length];
+        for (int i = 0; i < plainBytes.length; i++) {
+            cipherBytes[i] = (byte) (plainBytes[i] ^ keystream[i]);
+        }
+
+        return Base64.getEncoder().encodeToString(cipherBytes);
     }
 
-    /* Decrypt message using session key */
+    /* Decrypt using session key */
     public String sessionDecrypt(String ciphertext) throws Exception {
         if (this.sessionKey == null)
             throw new IllegalStateException("Session key not established");
 
-        byte[] all = Base64.getDecoder().decode(ciphertext);
-        if (all.length < 12)
-            throw new IllegalArgumentException("Malformed ciphertext");
+        byte[] cipherBytes = Base64.getDecoder().decode(ciphertext);
+        byte[] sessionKeyBytes = this.sessionKey.getEncoded();
 
-        byte[] iv = new byte[12];
-        System.arraycopy(all, 0, iv, 0, 12);
-        byte[] ct = new byte[all.length - 12];
-        System.arraycopy(all, 12, ct, 0, ct.length);
+        MessageDigest sha = MessageDigest.getInstance("SHA-256");
+        byte[] current = sha.digest(sessionKeyBytes);
+        byte[] keystream = new byte[cipherBytes.length];
+        int pos = 0;
 
-        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        GCMParameterSpec spec = new GCMParameterSpec(128, iv);
-        cipher.init(Cipher.DECRYPT_MODE, this.sessionKey, spec);
-        byte[] pt = cipher.doFinal(ct);
-        return new String(pt, "UTF-8");
+        while (pos < cipherBytes.length) {
+            int copy = Math.min(current.length, cipherBytes.length - pos);
+            System.arraycopy(current, 0, keystream, pos, copy);
+            pos += copy;
+            if (pos < cipherBytes.length) {
+                current = sha.digest(current);
+            }
+        }
+
+        byte[] plainBytes = new byte[cipherBytes.length];
+        for (int i = 0; i < cipherBytes.length; i++) {
+            plainBytes[i] = (byte) (cipherBytes[i] ^ keystream[i]);
+        }
+
+        return new String(plainBytes, "UTF-8");
     }
 }
