@@ -38,7 +38,10 @@ public class Client {
                 int length = dataInputStream.readInt();
                 byte[] buffer = new byte[length];
                 dataInputStream.readFully(buffer);
-                Message msg = Message.fromByteArray(buffer);
+                byte[] decryptedMessage = node.decryptRSA(buffer);
+                Message msg = Message.fromByteArray(decryptedMessage);
+                // Decrypt Message Data
+
                 System.out.println("[INFO] Message received from <" + msg.senderId + "> - Type: " + msg.messageType);
 
                 // Match message to respective handler
@@ -104,7 +107,6 @@ public class Client {
 
     /* Init Session Key */
     public static void initSessionKey(String receiverId) throws Exception {
-        
 
         // Prepare message
         BigInteger eph = node.generateEphemeralKeys(g, p);
@@ -121,7 +123,7 @@ public class Client {
 
     /* Handle Session Key Init */
     public static void handleSessionKeyInit(Message msg) throws Exception {
-        
+
         BigInteger eph = node.generateEphemeralKeys(g, p);
 
         // Derive the session key
@@ -141,7 +143,6 @@ public class Client {
 
     /* Handle Session Key Ack */
     public static void handleSessionKeyAck(Message msg) throws Exception {
-      
 
         if (msg.nonce != nonce - 1) {
             System.out.println("[ERROR] Nonce mismatch - Possible replay attack detected!");
@@ -169,7 +170,6 @@ public class Client {
 
     /* Handle Session Key Verify */
     public static void handleSessionKeyVerify(Message msg) throws Exception {
-       
 
         if (node.sessionDecrypt(msg.verify).equals("99")) {
             receiverId = msg.senderId;
@@ -184,8 +184,7 @@ public class Client {
     /* Send Message */
     public static void sendMessage(String receiverId, Message msg) throws Exception {
         // Encrypt each message before sending
-        // byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
-        byte[] encryptedMessage = msg.toByteArray();
+        byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
         int messageLength = encryptedMessage.length;
 
         dataOutputStream.writeInt(messageLength);
@@ -249,6 +248,8 @@ public class Client {
             System.out.println("[INFO] Initializing node: " + args[0]);
             node = new Node(args[0]);
 
+            // Load Keys
+            node.checkAndLoadKeys();
             // Load public key of relay
             System.out.println("[INFO] Loading Relay public key...");
             relayPublicKey = node.loadPublicKey("Relay");

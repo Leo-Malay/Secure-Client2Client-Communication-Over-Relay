@@ -1,7 +1,11 @@
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.file.*;
 import java.security.*;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.*;
 import java.util.Arrays;
 import java.util.Base64;
@@ -40,7 +44,6 @@ public class Node {
         saveKeyFile();
     }
 
-    
     public SecretKeySpec getSessionKey() {
         return this.sessionKey;
     }
@@ -115,25 +118,59 @@ public class Node {
 
     /* Encrypt Message */
     public byte[] encryptRSA(String receiverId, Message msg) throws Exception {
-        PublicKey receiverPublicKey = null;
-        // Check if we have the public key
-        boolean keyExists = this.neighbourPublicKey.containsKey(receiverId);
-        if (!keyExists) {
-            // Loading the key
+        PublicKey receiverPublicKey = this.neighbourPublicKey.get(receiverId);
+        if (receiverPublicKey == null)
             receiverPublicKey = loadPublicKey(receiverId);
-        }
-        // Encrypting
+
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, receiverPublicKey);
-        return cipher.doFinal(msg.toByteArray());
+
+        byte[] data = msg.toByteArray();
+        int originalLen = data.length;
+
+        int keySizeBytes = ((RSAPublicKey) receiverPublicKey).getModulus().bitLength() / 8;
+        int blockSize = keySizeBytes - 11;
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        // Write true data length (first 4 bytes)
+        output.write(ByteBuffer.allocate(4).putInt(originalLen).array());
+
+        int offset = 0;
+        while (offset < originalLen) {
+            int chunkSize = Math.min(blockSize, originalLen - offset);
+            byte[] chunk = Arrays.copyOfRange(data, offset, offset + chunkSize);
+            output.write(cipher.doFinal(chunk));
+            offset += chunkSize;
+        }
+
+        return output.toByteArray();
     }
 
     /* Decrpyt Message */
-    public byte[] decryptRSA(Message msg) throws Exception {
-        // Decrypting
+    public byte[] decryptRSA(byte[] ciphertext) throws Exception {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, this.rsaPrivateKey);
-        return cipher.doFinal(msg.toByteArray());
+
+        int keySizeBytes = ((RSAPrivateKey) this.rsaPrivateKey).getModulus().bitLength() / 8;
+
+        // FIRST 4 BYTES = original length
+        ByteBuffer wrap = ByteBuffer.wrap(ciphertext, 0, 4);
+        int originalLen = wrap.getInt();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+        int offset = 4;
+        while (offset < ciphertext.length) {
+            byte[] encBlock = Arrays.copyOfRange(ciphertext, offset, offset + keySizeBytes);
+            byte[] decChunk = cipher.doFinal(encBlock);
+            output.write(decChunk);
+            offset += keySizeBytes;
+        }
+
+        // Truncate to EXACT original serialized data length
+        byte[] allDec = output.toByteArray();
+        return Arrays.copyOfRange(allDec, 0, originalLen);
     }
 
     /* Generate and Fetch EPH */

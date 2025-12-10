@@ -58,8 +58,7 @@ public class Relay {
 
         DataOutputStream dataOutStream = clientMap.get(receiverId);
         // Encrypt each message before sending
-        // byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
-        byte[] encryptedMessage = msg.toByteArray();
+        byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
         int messageLength = encryptedMessage.length;
 
         dataOutStream.writeInt(messageLength);
@@ -94,10 +93,13 @@ public class Relay {
 
                         while (!client.isClosed()) {
                             try {
+
                                 int length = dataInputStream.readInt();
                                 byte[] buffer = new byte[length];
                                 dataInputStream.readFully(buffer);
-                                Message msg = Message.fromByteArray(buffer);
+                                // Message msg = Message.fromByteArray(buffer);
+                                byte[] decryptedMessage = node.decryptRSA(buffer);
+                                Message msg = Message.fromByteArray(decryptedMessage);
                                 // Handle incoming message
                                 handleIncomingMessage(msg, dataOutputStream);
 
