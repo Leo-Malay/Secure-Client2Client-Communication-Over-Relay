@@ -139,6 +139,7 @@ public class Client {
                 .nonce(msg.nonce - 1)
                 .verify(node.sessionEncrypt("100"))
                 .build();
+        node.sentCount += 1;
 
         // Send message via relay
         System.out.println("[INFO] Sending SESSIONKEY_ACK message to <" + msg.senderId + "> via Relay");
@@ -156,6 +157,7 @@ public class Client {
         // Derive the session key
         node.deriveSessionKey(msg.eph.toByteArray(), p);
         if (node.sessionDecrypt(msg.verify).equals("100")) {
+            node.recvCount += 1;
             System.out.println("[SUCCESS] Session key verified - Keys match!");
             receiverId = msg.senderId;
             startChatThread();
@@ -164,7 +166,7 @@ public class Client {
             Message session_ack_msg = new Message.Builder(node.nodeId, msg.senderId, MessageType.SESSIONKEY_VERIFY)
                     .verify(node.sessionEncrypt("99"))
                     .build();
-
+            node.sentCount += 1;
             // Send message via relay
             sendMessage("Relay", session_ack_msg);
         } else {
@@ -176,6 +178,7 @@ public class Client {
     public static void handleSessionKeyVerify(Message msg) throws Exception {
 
         if (node.sessionDecrypt(msg.verify).equals("99")) {
+            node.recvCount += 1;
             receiverId = msg.senderId;
             System.out.println("[SUCCESS] Session key establishment complete!");
             System.out.println("[INFO] You can now send encrypted messages to <" + msg.senderId + ">");
@@ -204,10 +207,10 @@ public class Client {
             System.out.println("[ERROR] Replay Attack Detected. Message Received Again!");
             return;
         }
-        node.recvCount += 1;
         System.out.println("[INFO] Decrypting chat message from <" + msg.senderId + ">");
         String decrypted = node.sessionDecrypt(msg.message);
         System.out.println("[" + msg.senderId + "]: " + decrypted);
+        node.recvCount += 1;
     }
 
     public static void sendChatMessage(String receiverId, String text) throws Exception {

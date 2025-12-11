@@ -265,6 +265,39 @@ public class Node {
     }
 
     /* Encrypt using session key */
+    /*
+     * public String sessionEncrypt(String plaintext) throws Exception {
+     * if (this.sessionKey == null)
+     * throw new IllegalStateException("Session key not established");
+     * 
+     * byte[] plainBytes = plaintext.getBytes("UTF-8");
+     * byte[] sessionKeyBytes = this.sessionKey.getEncoded();
+     * 
+     * MessageDigest sha = MessageDigest.getInstance("SHA-256");
+     * byte[] current = sha.digest(sessionKeyBytes);
+     * byte[] keystream = new byte[plainBytes.length];
+     * int pos = 0;
+     * 
+     * // Extending keystream
+     * while (pos < plainBytes.length) {
+     * int copy = Math.min(current.length, plainBytes.length - pos);
+     * System.arraycopy(current, 0, keystream, pos, copy);
+     * pos += copy;
+     * if (pos < plainBytes.length) {
+     * current = sha.digest(current);
+     * }
+     * }
+     * 
+     * // XOR
+     * byte[] cipherBytes = new byte[plainBytes.length];
+     * for (int i = 0; i < plainBytes.length; i++) {
+     * cipherBytes[i] = (byte) (plainBytes[i] ^ keystream[i]);
+     * }
+     * 
+     * return Base64.getEncoder().encodeToString(cipherBytes);
+     * }
+     */
+    /* Encrypt using session key */
     public String sessionEncrypt(String plaintext) throws Exception {
         if (this.sessionKey == null)
             throw new IllegalStateException("Session key not established");
@@ -272,8 +305,14 @@ public class Node {
         byte[] plainBytes = plaintext.getBytes("UTF-8");
         byte[] sessionKeyBytes = this.sessionKey.getEncoded();
 
+        byte[] cnt = ByteBuffer.allocate(8).putLong(sentCount).array();
+        byte[] combined = new byte[cnt.length + sessionKeyBytes.length];
+        System.arraycopy(cnt, 0, combined, 0, cnt.length);
+        System.arraycopy(sessionKeyBytes, 0, combined, cnt.length, sessionKeyBytes.length);
+        // ---------------------------------
+
         MessageDigest sha = MessageDigest.getInstance("SHA-256");
-        byte[] current = sha.digest(sessionKeyBytes);
+        byte[] current = sha.digest(combined);
         byte[] keystream = new byte[plainBytes.length];
         int pos = 0;
 
@@ -297,6 +336,37 @@ public class Node {
     }
 
     /* Decrypt using session key */
+    /*
+     * public String sessionDecrypt(String ciphertext) throws Exception {
+     * if (this.sessionKey == null)
+     * throw new IllegalStateException("Session key not established");
+     * 
+     * byte[] cipherBytes = Base64.getDecoder().decode(ciphertext);
+     * byte[] sessionKeyBytes = this.sessionKey.getEncoded();
+     * 
+     * MessageDigest sha = MessageDigest.getInstance("SHA-256");
+     * byte[] current = sha.digest(sessionKeyBytes);
+     * byte[] keystream = new byte[cipherBytes.length];
+     * int pos = 0;
+     * 
+     * while (pos < cipherBytes.length) {
+     * int copy = Math.min(current.length, cipherBytes.length - pos);
+     * System.arraycopy(current, 0, keystream, pos, copy);
+     * pos += copy;
+     * if (pos < cipherBytes.length) {
+     * current = sha.digest(current);
+     * }
+     * }
+     * 
+     * byte[] plainBytes = new byte[cipherBytes.length];
+     * for (int i = 0; i < cipherBytes.length; i++) {
+     * plainBytes[i] = (byte) (cipherBytes[i] ^ keystream[i]);
+     * }
+     * 
+     * return new String(plainBytes, "UTF-8");
+     * }
+     */
+    /* Decrypt using session key */
     public String sessionDecrypt(String ciphertext) throws Exception {
         if (this.sessionKey == null)
             throw new IllegalStateException("Session key not established");
@@ -304,8 +374,14 @@ public class Node {
         byte[] cipherBytes = Base64.getDecoder().decode(ciphertext);
         byte[] sessionKeyBytes = this.sessionKey.getEncoded();
 
+        byte[] cnt = ByteBuffer.allocate(8).putLong(recvCount).array();
+        byte[] combined = new byte[cnt.length + sessionKeyBytes.length];
+        System.arraycopy(cnt, 0, combined, 0, cnt.length);
+        System.arraycopy(sessionKeyBytes, 0, combined, cnt.length, sessionKeyBytes.length);
+        // ---------------------------------
+
         MessageDigest sha = MessageDigest.getInstance("SHA-256");
-        byte[] current = sha.digest(sessionKeyBytes);
+        byte[] current = sha.digest(combined);
         byte[] keystream = new byte[cipherBytes.length];
         int pos = 0;
 
@@ -325,4 +401,5 @@ public class Node {
 
         return new String(plainBytes, "UTF-8");
     }
+
 }
