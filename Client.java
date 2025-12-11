@@ -195,6 +195,12 @@ public class Client {
     }
 
     public static void handleChatMessage(Message msg) throws Exception {
+        System.out.println("MessageId:" + msg.messageId + " | Recv Count:" + node.recvCount);
+        if (msg.messageId != node.recvCount) {
+            System.out.println("[ERROR] Replay Attack Detected. Message Received Again!");
+            return;
+        }
+        node.recvCount += 1;
         System.out.println("[INFO] Decrypting chat message from <" + msg.senderId + ">");
         String decrypted = node.sessionDecrypt(msg.message);
         System.out.println("[" + msg.senderId + "]: " + decrypted);
@@ -203,10 +209,14 @@ public class Client {
     public static void sendChatMessage(String receiverId, String text) throws Exception {
         System.out.println("[INFO] Sending chat message to <" + receiverId + ">");
         String encrypted = node.sessionEncrypt(text);
-
+        if (text.equals("CTRL+R")) {
+            // Send Fake Replay
+            node.sentCount -= 1;
+        }
         Message chatMsg = new Message.Builder(node.nodeId, receiverId, MessageType.CHAT_MESSAGE)
-                .message(encrypted)
+                .message(encrypted).messageId(node.sentCount)
                 .build();
+        node.sentCount += 1;
 
         sendMessage("Relay", chatMsg);
     }

@@ -11,6 +11,7 @@ public class Message implements Serializable {
     public Integer nonce;
     public String verify;
     public String message;
+    public Integer messageId;
     public PublicKey publicKey;
 
     private Message(Builder builder) {
@@ -21,6 +22,7 @@ public class Message implements Serializable {
         this.nonce = builder.nonce;
         this.verify = builder.verify;
         this.message = builder.message;
+        this.messageId = builder.messageId;
         this.publicKey = builder.publicKey;
     }
 
@@ -34,6 +36,7 @@ public class Message implements Serializable {
         private Integer nonce;
         private String verify;
         private String message;
+        private Integer messageId;
         private PublicKey publicKey;
 
         /* Message Builder class */
@@ -64,6 +67,12 @@ public class Message implements Serializable {
         /* Set optional message */
         public Builder message(String message) {
             this.message = message;
+            return this;
+        }
+
+        /* Set optional message */
+        public Builder messageId(int messageId) {
+            this.messageId = messageId;
             return this;
         }
 

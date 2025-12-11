@@ -24,6 +24,8 @@ public class Node {
     private BigInteger eph = null;
     private SecretKeySpec sessionKey = null;
     private SecureRandom rng = new SecureRandom();
+    public int sentCount = 0;
+    public int recvCount = 0;
 
     /* Node class constructor */
     public Node(String nodeId) {
