@@ -11,7 +11,8 @@ public class Message implements Serializable {
     public Integer nonce;
     public String verify;
     public String message;
-    public Integer messageId;
+    public long messageId;
+    public byte[] sign;
     public PublicKey publicKey;
 
     private Message(Builder builder) {
@@ -23,7 +24,12 @@ public class Message implements Serializable {
         this.verify = builder.verify;
         this.message = builder.message;
         this.messageId = builder.messageId;
+        this.sign = builder.sign;
         this.publicKey = builder.publicKey;
+    }
+
+    public void setSignature(byte[] sign) {
+        this.sign = sign;
     }
 
     public static class Builder {
@@ -36,7 +42,8 @@ public class Message implements Serializable {
         private Integer nonce;
         private String verify;
         private String message;
-        private Integer messageId;
+        private long messageId;
+        private byte[] sign;
         private PublicKey publicKey;
 
         /* Message Builder class */
@@ -70,9 +77,15 @@ public class Message implements Serializable {
             return this;
         }
 
-        /* Set optional message */
-        public Builder messageId(int messageId) {
+        /* Set optional messageId */
+        public Builder messageId(long messageId) {
             this.messageId = messageId;
+            return this;
+        }
+
+        /* Set optional sign */
+        public Builder sign(byte[] sign) {
+            this.sign = sign;
             return this;
         }
 

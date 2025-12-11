@@ -14,7 +14,11 @@ public class Relay {
     public static void handleIncomingMessage(Message msg, DataOutputStream dataOutStream) throws Exception {
         switch (msg.messageType) {
             case REGISTRATION:
-                handleRegistration(msg, dataOutStream);
+                if (!node.verifyMessage(msg)) {
+                    System.out.println("[ERROR] Integrity Failed. Message signature mismatch.");
+                } else {
+                    handleRegistration(msg, dataOutStream);
+                }
                 break;
             default:
                 relayMessage(msg);
@@ -58,6 +62,9 @@ public class Relay {
 
         DataOutputStream dataOutStream = clientMap.get(receiverId);
         // Encrypt each message before sending
+        if (msg.messageType == MessageType.REGISTRATION_ACK) {
+            node.signMessage(msg);
+        }
         byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
         int messageLength = encryptedMessage.length;
 

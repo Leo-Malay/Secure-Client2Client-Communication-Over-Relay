@@ -43,27 +43,31 @@ public class Client {
                 // Decrypt Message Data
 
                 System.out.println("[INFO] Message received from <" + msg.senderId + "> - Type: " + msg.messageType);
-
-                // Match message to respective handler
-                switch (msg.messageType) {
-                    case REGISTRATION_ACK:
-                        handleRegistrationAck(msg);
-                        break;
-                    case SESSIONKEY_INIT:
-                        handleSessionKeyInit(msg);
-                        break;
-                    case SESSIONKEY_ACK:
-                        handleSessionKeyAck(msg);
-                        break;
-                    case SESSIONKEY_VERIFY:
-                        handleSessionKeyVerify(msg);
-                        break;
-                    case CHAT_MESSAGE:
-                        handleChatMessage(msg);
-                        break;
-                    default:
-                        System.out.println("[WARNING] Unknown message type received: " + msg.messageType);
-                        break;
+                // Verify Message
+                if (!node.verifyMessage(msg)) {
+                    System.out.println("[ERROR] Integrity Failed. Message signature mismatch.");
+                } else {
+                    // Match message to respective handler
+                    switch (msg.messageType) {
+                        case REGISTRATION_ACK:
+                            handleRegistrationAck(msg);
+                            break;
+                        case SESSIONKEY_INIT:
+                            handleSessionKeyInit(msg);
+                            break;
+                        case SESSIONKEY_ACK:
+                            handleSessionKeyAck(msg);
+                            break;
+                        case SESSIONKEY_VERIFY:
+                            handleSessionKeyVerify(msg);
+                            break;
+                        case CHAT_MESSAGE:
+                            handleChatMessage(msg);
+                            break;
+                        default:
+                            System.out.println("[WARNING] Unknown message type received: " + msg.messageType);
+                            break;
+                    }
                 }
             } catch (EOFException e) {
                 System.out.println("[INFO] Connection closed by server");
@@ -184,6 +188,7 @@ public class Client {
     /* Send Message */
     public static void sendMessage(String receiverId, Message msg) throws Exception {
         // Encrypt each message before sending
+        node.signMessage(msg);
         byte[] encryptedMessage = node.encryptRSA(receiverId, msg);
         int messageLength = encryptedMessage.length;
 
@@ -195,7 +200,6 @@ public class Client {
     }
 
     public static void handleChatMessage(Message msg) throws Exception {
-        System.out.println("MessageId:" + msg.messageId + " | Recv Count:" + node.recvCount);
         if (msg.messageId != node.recvCount) {
             System.out.println("[ERROR] Replay Attack Detected. Message Received Again!");
             return;

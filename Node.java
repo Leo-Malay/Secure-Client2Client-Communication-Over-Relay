@@ -1,5 +1,6 @@
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.file.*;
@@ -24,8 +25,8 @@ public class Node {
     private BigInteger eph = null;
     private SecretKeySpec sessionKey = null;
     private SecureRandom rng = new SecureRandom();
-    public int sentCount = 0;
-    public int recvCount = 0;
+    public long sentCount = 0;
+    public long recvCount = 0;
 
     /* Node class constructor */
     public Node(String nodeId) {
@@ -110,6 +111,56 @@ public class Node {
             System.out.println("[INFO] Loaded Public key of " + nodeId);
             return kf.generatePublic(privateKeySpec);
         }
+    }
+
+    /* Generate Signature */
+    public void signMessage(Message msg) throws Exception {
+        // Temporarily clear signature field
+        msg.setSignature(null);
+
+        // Serialize the message (without signature)
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(msg);
+        oos.flush();
+        byte[] data = bos.toByteArray();
+
+        // Sign serialized bytes
+        Signature s = Signature.getInstance("SHA256withRSA");
+        s.initSign(this.rsaPrivateKey);
+        s.update(data);
+        byte[] sig = s.sign();
+
+        // Restore signature to message
+        msg.setSignature(sig);
+    }
+
+    /* Verify Signature */
+    public boolean verifyMessage(Message msg) throws Exception {
+        PublicKey senderPublicKey = this.neighbourPublicKey.get(msg.senderId);
+        if (senderPublicKey == null)
+            senderPublicKey = loadPublicKey(msg.senderId);
+        byte[] sig = msg.sign;
+        // Temporarily remove signature for verification
+        msg.setSignature(null);
+
+        // Serialize message (without signature)
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(msg);
+        oos.flush();
+        byte[] data = bos.toByteArray();
+
+        // Verify
+        Signature s = Signature.getInstance("SHA256withRSA");
+        s.initVerify(senderPublicKey);
+        s.update(data);
+        boolean ok = s.verify(sig);
+
+        // Restore signature
+        msg.setSignature(sig);
+
+        return ok;
     }
 
     /* Generate Random Number */
